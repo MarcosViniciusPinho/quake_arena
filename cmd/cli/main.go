@@ -16,8 +16,9 @@ type Player struct {
 }
 
 type Game struct {
-	InitGame map[string]string `json:"init_game"`
-	Players  map[int]*Player   `json:"players"`
+	InitParams map[string]string `json:"init_params"`
+	Players    []*Player         `json:"players"`
+	PlayersMap map[int]*Player   `json:"-"`
 }
 
 func main() {
@@ -41,23 +42,27 @@ func main() {
 		if strings.Contains(line, "InitGame:") {
 			// If there is a current game, add it to the list of games
 			if currentGame != nil {
+				// Convert PlayersMap to Players slice
+				for _, player := range currentGame.PlayersMap {
+					currentGame.Players = append(currentGame.Players, player)
+				}
 				games = append(games, *currentGame)
 			}
 			// Create a new game
 			currentGame = &Game{
-				Players:  make(map[int]*Player),
-				InitGame: make(map[string]string),
+				PlayersMap: make(map[int]*Player),
+				InitParams: make(map[string]string),
 			}
 			// Extract all InitGame parameters
 			params := parseParams(line)
-			currentGame.InitGame = params
+			currentGame.InitParams = params
 		} else if strings.Contains(line, "ClientConnect:") && currentGame != nil {
 			// Extract player ID
 			re := regexp.MustCompile(`ClientConnect:\s*(\d+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 2 {
 				id, _ := strconv.Atoi(matches[1])
-				currentGame.Players[id] = &Player{ID: id}
+				currentGame.PlayersMap[id] = &Player{ID: id}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
 			// Extract player ID and name
@@ -66,14 +71,18 @@ func main() {
 			if len(matches) == 3 {
 				id, _ := strconv.Atoi(matches[1])
 				name := matches[2]
-				if player, ok := currentGame.Players[id]; ok {
+				if player, ok := currentGame.PlayersMap[id]; ok {
 					player.Name = name
 				} else {
-					currentGame.Players[id] = &Player{ID: id, Name: name}
+					currentGame.PlayersMap[id] = &Player{ID: id, Name: name}
 				}
 			}
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
 			// Finish the current game
+			// Convert PlayersMap to Players slice
+			for _, player := range currentGame.PlayersMap {
+				currentGame.Players = append(currentGame.Players, player)
+			}
 			games = append(games, *currentGame)
 			currentGame = nil
 		}
@@ -81,6 +90,10 @@ func main() {
 
 	// Add the last game if not already added
 	if currentGame != nil {
+		// Convert PlayersMap to Players slice
+		for _, player := range currentGame.PlayersMap {
+			currentGame.Players = append(currentGame.Players, player)
+		}
 		games = append(games, *currentGame)
 	}
 
@@ -98,7 +111,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("Data successfully extracted to 'resultado.json'")
+	fmt.Println("Data successfully extracted to 'output.json'")
 }
 
 // Function to parse parameters from the InitGame line
