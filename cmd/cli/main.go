@@ -10,10 +10,24 @@ import (
 	"strings"
 )
 
+type KillEvent struct {
+	VictimID   int    `json:"victim_id"`
+	VictimName string `json:"victim_name"`
+	Weapon     string `json:"weapon"`
+}
+
+type DeathEvent struct {
+	KillerID   int    `json:"killer_id"`
+	KillerName string `json:"killer_name"`
+	Weapon     string `json:"weapon"`
+}
+
 type Player struct {
-	ID    int      `json:"id"`
-	Name  string   `json:"name"`
-	Items []string `json:"items"`
+	ID     int          `json:"id"`
+	Name   string       `json:"name"`
+	Items  []string     `json:"items"`
+	Kills  []KillEvent  `json:"kills"`
+	Deaths []DeathEvent `json:"deaths"`
 }
 
 func main() {
@@ -91,6 +105,56 @@ func main() {
 					playersMap[id] = &Player{
 						ID:    id,
 						Items: []string{item},
+					}
+				}
+			}
+		} else if strings.Contains(line, "Kill:") && currentGame != nil {
+			// Processa os eventos de morte
+			re := regexp.MustCompile(`Kill:\s+(\d+)\s+(\d+)\s+\d+:\s+(.*)\s+killed\s+(.*)\s+by\s+(.*)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) == 6 {
+				killerID, _ := strconv.Atoi(matches[1])
+				victimID, _ := strconv.Atoi(matches[2])
+				killerName := matches[3]
+				victimName := matches[4]
+				weapon := matches[5]
+
+				// Ajusta o nome do assassino se for o mundo
+				if killerID == 1022 {
+					killerName = "<world>"
+				}
+
+				// Atualiza as mortes do jogador vítima
+				if victim, ok := playersMap[victimID]; ok {
+					victim.Deaths = append(victim.Deaths, DeathEvent{
+						KillerID:   killerID,
+						KillerName: killerName,
+						Weapon:     weapon,
+					})
+				} else {
+					playersMap[victimID] = &Player{
+						ID:     victimID,
+						Name:   victimName,
+						Items:  []string{},
+						Deaths: []DeathEvent{{KillerID: killerID, KillerName: killerName, Weapon: weapon}},
+					}
+				}
+
+				// Se o assassino não for o mundo, atualiza as kills
+				if killerID != 1022 && killerID != victimID {
+					if killer, ok := playersMap[killerID]; ok {
+						killer.Kills = append(killer.Kills, KillEvent{
+							VictimID:   victimID,
+							VictimName: victimName,
+							Weapon:     weapon,
+						})
+					} else {
+						playersMap[killerID] = &Player{
+							ID:    killerID,
+							Name:  killerName,
+							Items: []string{},
+							Kills: []KillEvent{{VictimID: victimID, VictimName: victimName, Weapon: weapon}},
+						}
 					}
 				}
 			}
