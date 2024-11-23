@@ -15,111 +15,113 @@ type Player struct {
 	Name string `json:"name"`
 }
 
-type Game struct {
-	InitParams map[string]string `json:"init_params"`
-	Players    []*Player         `json:"players"`
-	PlayersMap map[int]*Player   `json:"-"`
-}
-
 func main() {
-	// Open the log file
+	// Abra o arquivo de log
 	file, err := os.Open("../../qgames.log")
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		fmt.Println("Erro ao abrir o arquivo:", err)
 		return
 	}
 	defer file.Close()
 
-	// Variables to store games and the current game
-	var games []Game
-	var currentGame *Game
+	// Variáveis para armazenar os jogos e o jogo atual
+	var games []map[string]interface{}
+	var currentGame map[string]interface{}
+	var playersMap map[int]*Player
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		// Check if it's the start of a new game
+		// Verifica se é o início de um novo jogo
 		if strings.Contains(line, "InitGame:") {
-			// If there is a current game, add it to the list of games
+			// Se houver um jogo atual, adiciona-o à lista de jogos
 			if currentGame != nil {
-				// Convert PlayersMap to Players slice
-				for _, player := range currentGame.PlayersMap {
-					currentGame.Players = append(currentGame.Players, player)
+				// Converte playersMap para slice de players
+				players := []*Player{}
+				for _, player := range playersMap {
+					players = append(players, player)
 				}
-				games = append(games, *currentGame)
+				currentGame["players"] = players
+				games = append(games, currentGame)
 			}
-			// Create a new game
-			currentGame = &Game{
-				PlayersMap: make(map[int]*Player),
-				InitParams: make(map[string]string),
-			}
-			// Extract all InitGame parameters
+			// Cria um novo jogo
+			currentGame = make(map[string]interface{})
+			playersMap = make(map[int]*Player)
+			// Extrai todos os parâmetros do InitGame e adiciona ao currentGame
 			params := parseParams(line)
-			currentGame.InitParams = params
+			for key, value := range params {
+				currentGame[key] = value
+			}
 		} else if strings.Contains(line, "ClientConnect:") && currentGame != nil {
-			// Extract player ID
+			// Extrai o ID do jogador
 			re := regexp.MustCompile(`ClientConnect:\s*(\d+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 2 {
 				id, _ := strconv.Atoi(matches[1])
-				currentGame.PlayersMap[id] = &Player{ID: id}
+				playersMap[id] = &Player{ID: id}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
-			// Extract player ID and name
+			// Extrai o ID do jogador e o nome
 			re := regexp.MustCompile(`ClientUserinfoChanged:\s*(\d+)\s+n\\([^\\]+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 3 {
 				id, _ := strconv.Atoi(matches[1])
 				name := matches[2]
-				if player, ok := currentGame.PlayersMap[id]; ok {
+				if player, ok := playersMap[id]; ok {
 					player.Name = name
 				} else {
-					currentGame.PlayersMap[id] = &Player{ID: id, Name: name}
+					playersMap[id] = &Player{ID: id, Name: name}
 				}
 			}
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
-			// Finish the current game
-			// Convert PlayersMap to Players slice
-			for _, player := range currentGame.PlayersMap {
-				currentGame.Players = append(currentGame.Players, player)
+			// Finaliza o jogo atual
+			// Converte playersMap para slice de players
+			players := []*Player{}
+			for _, player := range playersMap {
+				players = append(players, player)
 			}
-			games = append(games, *currentGame)
+			currentGame["players"] = players
+			games = append(games, currentGame)
 			currentGame = nil
+			playersMap = nil
 		}
 	}
 
-	// Add the last game if not already added
+	// Adiciona o último jogo se não foi adicionado
 	if currentGame != nil {
-		// Convert PlayersMap to Players slice
-		for _, player := range currentGame.PlayersMap {
-			currentGame.Players = append(currentGame.Players, player)
+		// Converte playersMap para slice de players
+		players := []*Player{}
+		for _, player := range playersMap {
+			players = append(players, player)
 		}
-		games = append(games, *currentGame)
+		currentGame["players"] = players
+		games = append(games, currentGame)
 	}
 
-	// Convert games to JSON
+	// Converte os jogos para JSON
 	jsonData, err := json.MarshalIndent(games, "", "  ")
 	if err != nil {
-		fmt.Println("Error converting to JSON:", err)
+		fmt.Println("Erro ao converter para JSON:", err)
 		return
 	}
 
-	// Save to a JSON file
+	// Salva em um arquivo JSON
 	err = os.WriteFile("../../output.json", jsonData, 0644)
 	if err != nil {
-		fmt.Println("Error writing JSON file:", err)
+		fmt.Println("Erro ao escrever o arquivo JSON:", err)
 		return
 	}
 
-	fmt.Println("Data successfully extracted to 'output.json'")
+	fmt.Println("Dados extraídos com sucesso para 'output.json'")
 }
 
-// Function to parse parameters from the InitGame line
+// Função para parsear os parâmetros de uma linha
 func parseParams(line string) map[string]string {
 	params := make(map[string]string)
-	// Remove 'InitGame: ' prefix if present
+	// Remove o prefixo 'InitGame: ' se presente
 	line = strings.TrimPrefix(line, "InitGame: ")
-	// Regex to match \key\value pairs
+	// Regex para capturar pares \chave\valor
 	re := regexp.MustCompile(`\\([^\\]+)\\([^\\]+)`)
 	matches := re.FindAllStringSubmatch(line, -1)
 	for _, match := range matches {
