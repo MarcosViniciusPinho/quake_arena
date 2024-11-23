@@ -11,8 +11,9 @@ import (
 )
 
 type Player struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID    int      `json:"id"`
+	Name  string   `json:"name"`
+	Items []string `json:"items"`
 }
 
 func main() {
@@ -59,7 +60,9 @@ func main() {
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 2 {
 				id, _ := strconv.Atoi(matches[1])
-				playersMap[id] = &Player{ID: id}
+				if _, exists := playersMap[id]; !exists {
+					playersMap[id] = &Player{ID: id, Items: []string{}}
+				}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
 			// Extrai o ID do jogador e o nome
@@ -71,7 +74,24 @@ func main() {
 				if player, ok := playersMap[id]; ok {
 					player.Name = name
 				} else {
-					playersMap[id] = &Player{ID: id, Name: name}
+					playersMap[id] = &Player{ID: id, Name: name, Items: []string{}}
+				}
+			}
+		} else if strings.Contains(line, "Item:") && currentGame != nil {
+			// Captura os itens coletados pelos jogadores
+			re := regexp.MustCompile(`Item:\s*(\d+)\s+(.*)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) == 3 {
+				id, _ := strconv.Atoi(matches[1])
+				item := matches[2]
+				if player, ok := playersMap[id]; ok {
+					player.Items = append(player.Items, item)
+				} else {
+					// Se o jogador não existir, cria um novo
+					playersMap[id] = &Player{
+						ID:    id,
+						Items: []string{item},
+					}
 				}
 			}
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
