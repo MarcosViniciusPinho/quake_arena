@@ -31,6 +31,10 @@ type Player struct {
 }
 
 func main() {
+	process()
+}
+
+func process() {
 	// Abra o arquivo de log
 	file, err := os.Open("../../qgames.log")
 	if err != nil {
