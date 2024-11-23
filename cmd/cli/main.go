@@ -16,20 +16,20 @@ type Player struct {
 }
 
 type Game struct {
-	MapName string          `json:"map_name"`
-	Players map[int]*Player `json:"players"`
+	InitGame map[string]string `json:"init_game"`
+	Players  map[int]*Player   `json:"players"`
 }
 
 func main() {
-	// Abra o arquivo de log
+	// Open the log file
 	file, err := os.Open("../../qgames.log")
 	if err != nil {
-		fmt.Println("Erro ao abrir o arquivo:", err)
+		fmt.Println("Error opening file:", err)
 		return
 	}
 	defer file.Close()
 
-	// Variáveis para armazenar jogos e o jogo atual
+	// Variables to store games and the current game
 	var games []Game
 	var currentGame *Game
 
@@ -37,23 +37,22 @@ func main() {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		// Verifica se é o início de um novo jogo
+		// Check if it's the start of a new game
 		if strings.Contains(line, "InitGame:") {
-			// Se houver um jogo atual, adiciona à lista de jogos
+			// If there is a current game, add it to the list of games
 			if currentGame != nil {
 				games = append(games, *currentGame)
 			}
-			// Cria um novo jogo
+			// Create a new game
 			currentGame = &Game{
-				Players: make(map[int]*Player),
+				Players:  make(map[int]*Player),
+				InitGame: make(map[string]string),
 			}
-			// Extrai o nome do mapa
+			// Extract all InitGame parameters
 			params := parseParams(line)
-			if mapName, ok := params["mapname"]; ok {
-				currentGame.MapName = mapName
-			}
+			currentGame.InitGame = params
 		} else if strings.Contains(line, "ClientConnect:") && currentGame != nil {
-			// Extrai o ID do jogador
+			// Extract player ID
 			re := regexp.MustCompile(`ClientConnect:\s*(\d+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 2 {
@@ -61,7 +60,7 @@ func main() {
 				currentGame.Players[id] = &Player{ID: id}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
-			// Extrai o ID e o nome do jogador
+			// Extract player ID and name
 			re := regexp.MustCompile(`ClientUserinfoChanged:\s*(\d+)\s+n\\([^\\]+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 3 {
@@ -74,37 +73,40 @@ func main() {
 				}
 			}
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
-			// Finaliza o jogo atual
+			// Finish the current game
 			games = append(games, *currentGame)
 			currentGame = nil
 		}
 	}
 
-	// Adiciona o último jogo se não foi adicionado
+	// Add the last game if not already added
 	if currentGame != nil {
 		games = append(games, *currentGame)
 	}
 
-	// Converte os jogos para JSON
+	// Convert games to JSON
 	jsonData, err := json.MarshalIndent(games, "", "  ")
 	if err != nil {
-		fmt.Println("Erro ao converter para JSON:", err)
+		fmt.Println("Error converting to JSON:", err)
 		return
 	}
 
-	// Salva em um arquivo JSON
+	// Save to a JSON file
 	err = os.WriteFile("../../output.json", jsonData, 0644)
 	if err != nil {
-		fmt.Println("Erro ao escrever o arquivo JSON:", err)
+		fmt.Println("Error writing JSON file:", err)
 		return
 	}
 
-	fmt.Println("Dados extraídos com sucesso para 'resultado.json'")
+	fmt.Println("Data successfully extracted to 'resultado.json'")
 }
 
-// Função para parsear os parâmetros da linha InitGame
+// Function to parse parameters from the InitGame line
 func parseParams(line string) map[string]string {
 	params := make(map[string]string)
+	// Remove 'InitGame: ' prefix if present
+	line = strings.TrimPrefix(line, "InitGame: ")
+	// Regex to match \key\value pairs
 	re := regexp.MustCompile(`\\([^\\]+)\\([^\\]+)`)
 	matches := re.FindAllStringSubmatch(line, -1)
 	for _, match := range matches {
