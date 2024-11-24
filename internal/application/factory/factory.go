@@ -1,8 +1,8 @@
 package factory
 
 import (
-	"github.com/MarcosViniciusPinho/quake_arena/internal/application/processor"
 	"github.com/MarcosViniciusPinho/quake_arena/internal/domain/service"
+	"github.com/MarcosViniciusPinho/quake_arena/internal/infrastructure/processor"
 )
 
 type Feature struct {
