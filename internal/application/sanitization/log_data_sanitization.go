@@ -14,14 +14,14 @@ import (
 )
 
 func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
-	// Abra o arquivo de log
+	// Open the log file
 	file, err := os.Open(logFile)
 	if err != nil {
-		return fmt.Errorf("erro ao abrir o arquivo: %v", err)
+		return fmt.Errorf("error opening the file: %v", err)
 	}
 	defer file.Close()
 
-	// Variáveis para armazenar os jogos e o jogo atual
+	// Variables to store games and the current game
 	var games []map[string]any
 	var currentGame map[string]any
 	var playersMap map[int]*input.PlayerInput
@@ -30,11 +30,11 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		// Verifica se é o início de um novo jogo
+		// Check if it's the start of a new game
 		if strings.Contains(line, "InitGame:") {
-			// Se houver um jogo atual, adiciona-o à lista de jogos
+			// If there's a current game, add it to the list of games
 			if currentGame != nil {
-				// Converte playersMap para slice de players
+				// Convert playersMap to slice of players
 				players := []*input.PlayerInput{}
 				for _, player := range playersMap {
 					players = append(players, player)
@@ -42,16 +42,16 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				currentGame["players"] = players
 				games = append(games, currentGame)
 			}
-			// Cria um novo jogo
+			// Create a new game
 			currentGame = make(map[string]any)
 			playersMap = make(map[int]*input.PlayerInput)
-			// Extrai todos os parâmetros do InitGame e adiciona ao currentGame
+			// Extract all parameters from InitGame and add to currentGame
 			params := parseParams(line)
 			for key, value := range params {
 				currentGame[key] = value
 			}
 		} else if strings.Contains(line, "ClientConnect:") && currentGame != nil {
-			// Extrai o ID do jogador
+			// Extract the player ID
 			re := regexp.MustCompile(`ClientConnect:\s*(\d+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 2 {
@@ -61,7 +61,7 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
-			// Extrai o ID do jogador e o nome
+			// Extract the player ID and name
 			re := regexp.MustCompile(`ClientUserinfoChanged:\s*(\d+)\s+n\\([^\\]+)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 3 {
@@ -74,7 +74,7 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				}
 			}
 		} else if strings.Contains(line, "Item:") && currentGame != nil {
-			// Captura os itens coletados pelos jogadores
+			// Capture items collected by players
 			re := regexp.MustCompile(`Item:\s*(\d+)\s+(.*)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 3 {
@@ -83,7 +83,7 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				if player, ok := playersMap[id]; ok {
 					player.Items = append(player.Items, item)
 				} else {
-					// Se o jogador não existir, cria um novo
+					// If the player doesn't exist, create a new one
 					playersMap[id] = &input.PlayerInput{
 						ID:    id,
 						Items: []string{item},
@@ -91,7 +91,7 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				}
 			}
 		} else if strings.Contains(line, "Kill:") && currentGame != nil {
-			// Processa os eventos de morte
+			// Process death events
 			re := regexp.MustCompile(`Kill:\s+(\d+)\s+(\d+)\s+\d+:\s+(.*)\s+killed\s+(.*)\s+by\s+(.*)`)
 			matches := re.FindStringSubmatch(line)
 			if len(matches) == 6 {
@@ -101,12 +101,12 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				victimName := matches[4]
 				weapon := matches[5]
 
-				// Ajusta o nome do assassino se for o mundo
+				// Adjust the killer's name if it's the world
 				if killerID == util.World {
 					killerName = "<world>"
 				}
 
-				// Atualiza as mortes do jogador vítima
+				// Update the victim player's deaths
 				if victim, ok := playersMap[victimID]; ok {
 					victim.Deaths = append(victim.Deaths, input.DeathEventInput{
 						KillerID:   killerID,
@@ -122,7 +122,7 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 					}
 				}
 
-				// Se o assassino não for o mundo, atualiza as kills
+				// If the killer is not the world, update kills
 				if killerID != util.World && killerID != victimID {
 					if killer, ok := playersMap[killerID]; ok {
 						killer.Kills = append(killer.Kills, input.KillEventInput{
@@ -141,8 +141,8 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 				}
 			}
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
-			// Finaliza o jogo atual
-			// Converte playersMap para slice de players
+			// Finalize the current game
+			// Convert playersMap to slice of players
 			players := []*input.PlayerInput{}
 			for _, player := range playersMap {
 				players = append(players, player)
@@ -154,9 +154,9 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 		}
 	}
 
-	// Adiciona o último jogo se não foi adicionado
+	// Add the last game if it wasn't added
 	if currentGame != nil {
-		// Converte playersMap para slice de players
+		// Convert playersMap to slice of players
 		players := []*input.PlayerInput{}
 		for _, player := range playersMap {
 			players = append(players, player)
@@ -165,26 +165,24 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 		games = append(games, currentGame)
 	}
 
-	// Converte os jogos para JSON
 	jsonData, err := json.MarshalIndent(games, "", "  ")
 	if err != nil {
-		return fmt.Errorf("erro ao converter para JSON: %v", err)
+		return fmt.Errorf("error converting to JSON: %v", err)
 	}
 
-	// Salva em um arquivo JSON
 	err = os.WriteFile(jsonFile, jsonData, 0644)
 	if err != nil {
-		return fmt.Errorf("erro ao escrever o arquivo JSON: %v", err)
+		return fmt.Errorf("error writing the JSON file: %v", err)
 	}
 	return nil
 }
 
-// Função para parsear os parâmetros de uma linha
+// Function to parse the parameters from a line
 func parseParams(line string) map[string]string {
 	params := make(map[string]string)
-	// Remove o prefixo 'InitGame: ' se presente
+	// Remove the prefix 'InitGame: ' if present
 	line = strings.TrimPrefix(line, "InitGame: ")
-	// Regex para capturar pares \chave\valor
+	// Regex to capture \key\value pairs
 	re := regexp.MustCompile(`\\([^\\]+)\\([^\\]+)`)
 	matches := re.FindAllStringSubmatch(line, -1)
 	for _, match := range matches {
