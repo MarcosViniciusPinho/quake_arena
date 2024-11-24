@@ -13,12 +13,11 @@ import (
 	"github.com/MarcosViniciusPinho/quake_arena/pkg/util"
 )
 
-func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) {
+func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 	// Abra o arquivo de log
 	file, err := os.Open(logFile)
 	if err != nil {
-		fmt.Println("Erro ao abrir o arquivo:", err)
-		return
+		return fmt.Errorf("erro ao abrir o arquivo: %v", err)
 	}
 	defer file.Close()
 
@@ -169,16 +168,15 @@ func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) {
 	// Converte os jogos para JSON
 	jsonData, err := json.MarshalIndent(games, "", "  ")
 	if err != nil {
-		fmt.Println("Erro ao converter para JSON:", err)
-		return
+		return fmt.Errorf("erro ao converter para JSON: %v", err)
 	}
 
 	// Salva em um arquivo JSON
 	err = os.WriteFile(jsonFile, jsonData, 0644)
 	if err != nil {
-		fmt.Println("Erro ao escrever o arquivo JSON:", err)
-		return
+		return fmt.Errorf("erro ao escrever o arquivo JSON: %v", err)
 	}
+	return nil
 }
 
 // Função para parsear os parâmetros de uma linha

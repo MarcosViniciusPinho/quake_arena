@@ -9,10 +9,13 @@ import (
 )
 
 func main() {
-	sanitization.ExtractInformationFromTheQuakeLogFile(
+	if err := sanitization.ExtractInformationFromTheQuakeLogFile(
 		"../../qgames.log",
 		"../../reading_the_log_file.json",
-	)
+	); err != nil {
+		log.Println(err)
+		return
+	}
 	if err := processor.New(
 		"../../reading_the_log_file.json",
 		"../../grouping_data_by_game.json",
