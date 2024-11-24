@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/MarcosViniciusPinho/quake_arena/internal/application/output"
 	"github.com/MarcosViniciusPinho/quake_arena/internal/domain"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestItMustGroupInformationFromEachGameWithEachPlayersStatisticsAndWithTheTo
 
 type TestGameOutput struct {
 	Input    string
-	Expected map[string]GameOutput
+	Expected map[string]output.GameOutput
 }
 
 func getTests() []TestGameOutput {
@@ -113,7 +114,7 @@ func getTests() []TestGameOutput {
     ]
   }
 ]`,
-			Expected: map[string]GameOutput{
+			Expected: map[string]output.GameOutput{
 				"jogo_1": {
 					TotalKills: 11,
 					Jogadores:  []string{"Isgalamido", "Mocinha"},
@@ -139,7 +140,7 @@ func getTests() []TestGameOutput {
     ]
   }
 ]`,
-			Expected: map[string]GameOutput{
+			Expected: map[string]output.GameOutput{
 				"jogo_1": {
 					TotalKills: 0,
 					Jogadores:  []string{"Isgalamido"},
@@ -1114,7 +1115,7 @@ func getTests() []TestGameOutput {
     ]
   }
 ]`,
-			Expected: map[string]GameOutput{
+			Expected: map[string]output.GameOutput{
 				"jogo_1": {
 					TotalKills: 105,
 					Jogadores: []string{
@@ -2189,7 +2190,7 @@ func getTests() []TestGameOutput {
   }
 ]			
 `,
-			Expected: map[string]GameOutput{
+			Expected: map[string]output.GameOutput{
 				"jogo_1": {
 					TotalKills: 11,
 					Jogadores:  []string{"Isgalamido", "Mocinha"},

@@ -3,18 +3,13 @@ package game
 import (
 	"fmt"
 
+	"github.com/MarcosViniciusPinho/quake_arena/internal/application/output"
 	"github.com/MarcosViniciusPinho/quake_arena/internal/domain"
 	"github.com/MarcosViniciusPinho/quake_arena/pkg/util"
 )
 
-type GameOutput struct {
-	TotalKills int            `json:"total_kills"`
-	Jogadores  []string       `json:"jogadores"`
-	Kills      map[string]int `json:"kills"`
-}
-
-func Process(games []domain.Game) map[string]GameOutput {
-	results := make(map[string]GameOutput)
+func Process(games []domain.Game) map[string]output.GameOutput {
+	results := make(map[string]output.GameOutput)
 
 	for idx, game := range games {
 		gameNumber := fmt.Sprintf("jogo_%d", idx+1)
@@ -53,7 +48,7 @@ func Process(games []domain.Game) map[string]GameOutput {
 			}
 		}
 
-		results[gameNumber] = GameOutput{
+		results[gameNumber] = output.GameOutput{
 			TotalKills: totalKills,
 			Jogadores:  playerNames,
 			Kills:      killRanking,
