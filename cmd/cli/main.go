@@ -34,7 +34,7 @@ func process() {
 	// Variáveis para armazenar os jogos e o jogo atual
 	var games []map[string]any
 	var currentGame map[string]any
-	var playersMap map[int]*input.Player
+	var playersMap map[int]*input.PlayerInput
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -45,7 +45,7 @@ func process() {
 			// Se houver um jogo atual, adiciona-o à lista de jogos
 			if currentGame != nil {
 				// Converte playersMap para slice de players
-				players := []*input.Player{}
+				players := []*input.PlayerInput{}
 				for _, player := range playersMap {
 					players = append(players, player)
 				}
@@ -54,7 +54,7 @@ func process() {
 			}
 			// Cria um novo jogo
 			currentGame = make(map[string]any)
-			playersMap = make(map[int]*input.Player)
+			playersMap = make(map[int]*input.PlayerInput)
 			// Extrai todos os parâmetros do InitGame e adiciona ao currentGame
 			params := parseParams(line)
 			for key, value := range params {
@@ -67,7 +67,7 @@ func process() {
 			if len(matches) == 2 {
 				id, _ := strconv.Atoi(matches[1])
 				if _, exists := playersMap[id]; !exists {
-					playersMap[id] = &input.Player{ID: id, Items: []string{}}
+					playersMap[id] = &input.PlayerInput{ID: id, Items: []string{}}
 				}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
@@ -80,7 +80,7 @@ func process() {
 				if player, ok := playersMap[id]; ok {
 					player.Name = name
 				} else {
-					playersMap[id] = &input.Player{ID: id, Name: name, Items: []string{}}
+					playersMap[id] = &input.PlayerInput{ID: id, Name: name, Items: []string{}}
 				}
 			}
 		} else if strings.Contains(line, "Item:") && currentGame != nil {
@@ -94,7 +94,7 @@ func process() {
 					player.Items = append(player.Items, item)
 				} else {
 					// Se o jogador não existir, cria um novo
-					playersMap[id] = &input.Player{
+					playersMap[id] = &input.PlayerInput{
 						ID:    id,
 						Items: []string{item},
 					}
@@ -118,34 +118,34 @@ func process() {
 
 				// Atualiza as mortes do jogador vítima
 				if victim, ok := playersMap[victimID]; ok {
-					victim.Deaths = append(victim.Deaths, input.DeathEvent{
+					victim.Deaths = append(victim.Deaths, input.DeathEventInput{
 						KillerID:   killerID,
 						KillerName: killerName,
 						Weapon:     weapon,
 					})
 				} else {
-					playersMap[victimID] = &input.Player{
+					playersMap[victimID] = &input.PlayerInput{
 						ID:     victimID,
 						Name:   victimName,
 						Items:  []string{},
-						Deaths: []input.DeathEvent{{KillerID: killerID, KillerName: killerName, Weapon: weapon}},
+						Deaths: []input.DeathEventInput{{KillerID: killerID, KillerName: killerName, Weapon: weapon}},
 					}
 				}
 
 				// Se o assassino não for o mundo, atualiza as kills
 				if killerID != util.World && killerID != victimID {
 					if killer, ok := playersMap[killerID]; ok {
-						killer.Kills = append(killer.Kills, input.KillEvent{
+						killer.Kills = append(killer.Kills, input.KillEventInput{
 							VictimID:   victimID,
 							VictimName: victimName,
 							Weapon:     weapon,
 						})
 					} else {
-						playersMap[killerID] = &input.Player{
+						playersMap[killerID] = &input.PlayerInput{
 							ID:    killerID,
 							Name:  killerName,
 							Items: []string{},
-							Kills: []input.KillEvent{{VictimID: victimID, VictimName: victimName, Weapon: weapon}},
+							Kills: []input.KillEventInput{{VictimID: victimID, VictimName: victimName, Weapon: weapon}},
 						}
 					}
 				}
@@ -153,7 +153,7 @@ func process() {
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
 			// Finaliza o jogo atual
 			// Converte playersMap para slice de players
-			players := []*input.Player{}
+			players := []*input.PlayerInput{}
 			for _, player := range playersMap {
 				players = append(players, player)
 			}
@@ -167,7 +167,7 @@ func process() {
 	// Adiciona o último jogo se não foi adicionado
 	if currentGame != nil {
 		// Converte playersMap para slice de players
-		players := []*input.Player{}
+		players := []*input.PlayerInput{}
 		for _, player := range playersMap {
 			players = append(players, player)
 		}
