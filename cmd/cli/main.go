@@ -4,34 +4,22 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/MarcosViniciusPinho/quake_arena/internal/application/input"
+	"github.com/MarcosViniciusPinho/quake_arena/internal/application/processor"
+	"github.com/MarcosViniciusPinho/quake_arena/pkg/util"
 )
-
-type KillEvent struct {
-	VictimID   int    `json:"victim_id"`
-	VictimName string `json:"victim_name"`
-	Weapon     string `json:"weapon"`
-}
-
-type DeathEvent struct {
-	KillerID   int    `json:"killer_id"`
-	KillerName string `json:"killer_name"`
-	Weapon     string `json:"weapon"`
-}
-
-type Player struct {
-	ID     int          `json:"id"`
-	Name   string       `json:"name"`
-	Items  []string     `json:"items"`
-	Kills  []KillEvent  `json:"kills"`
-	Deaths []DeathEvent `json:"deaths"`
-}
 
 func main() {
 	process()
+	if err := processor.NewGameProcessor("../../output.json").Execute(); err != nil {
+		log.Println(err)
+	}
 }
 
 func process() {
@@ -44,9 +32,9 @@ func process() {
 	defer file.Close()
 
 	// Variáveis para armazenar os jogos e o jogo atual
-	var games []map[string]interface{}
-	var currentGame map[string]interface{}
-	var playersMap map[int]*Player
+	var games []map[string]any
+	var currentGame map[string]any
+	var playersMap map[int]*input.Player
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -57,7 +45,7 @@ func process() {
 			// Se houver um jogo atual, adiciona-o à lista de jogos
 			if currentGame != nil {
 				// Converte playersMap para slice de players
-				players := []*Player{}
+				players := []*input.Player{}
 				for _, player := range playersMap {
 					players = append(players, player)
 				}
@@ -65,8 +53,8 @@ func process() {
 				games = append(games, currentGame)
 			}
 			// Cria um novo jogo
-			currentGame = make(map[string]interface{})
-			playersMap = make(map[int]*Player)
+			currentGame = make(map[string]any)
+			playersMap = make(map[int]*input.Player)
 			// Extrai todos os parâmetros do InitGame e adiciona ao currentGame
 			params := parseParams(line)
 			for key, value := range params {
@@ -79,7 +67,7 @@ func process() {
 			if len(matches) == 2 {
 				id, _ := strconv.Atoi(matches[1])
 				if _, exists := playersMap[id]; !exists {
-					playersMap[id] = &Player{ID: id, Items: []string{}}
+					playersMap[id] = &input.Player{ID: id, Items: []string{}}
 				}
 			}
 		} else if strings.Contains(line, "ClientUserinfoChanged:") && currentGame != nil {
@@ -92,7 +80,7 @@ func process() {
 				if player, ok := playersMap[id]; ok {
 					player.Name = name
 				} else {
-					playersMap[id] = &Player{ID: id, Name: name, Items: []string{}}
+					playersMap[id] = &input.Player{ID: id, Name: name, Items: []string{}}
 				}
 			}
 		} else if strings.Contains(line, "Item:") && currentGame != nil {
@@ -106,7 +94,7 @@ func process() {
 					player.Items = append(player.Items, item)
 				} else {
 					// Se o jogador não existir, cria um novo
-					playersMap[id] = &Player{
+					playersMap[id] = &input.Player{
 						ID:    id,
 						Items: []string{item},
 					}
@@ -124,40 +112,40 @@ func process() {
 				weapon := matches[5]
 
 				// Ajusta o nome do assassino se for o mundo
-				if killerID == 1022 {
+				if killerID == util.World {
 					killerName = "<world>"
 				}
 
 				// Atualiza as mortes do jogador vítima
 				if victim, ok := playersMap[victimID]; ok {
-					victim.Deaths = append(victim.Deaths, DeathEvent{
+					victim.Deaths = append(victim.Deaths, input.DeathEvent{
 						KillerID:   killerID,
 						KillerName: killerName,
 						Weapon:     weapon,
 					})
 				} else {
-					playersMap[victimID] = &Player{
+					playersMap[victimID] = &input.Player{
 						ID:     victimID,
 						Name:   victimName,
 						Items:  []string{},
-						Deaths: []DeathEvent{{KillerID: killerID, KillerName: killerName, Weapon: weapon}},
+						Deaths: []input.DeathEvent{{KillerID: killerID, KillerName: killerName, Weapon: weapon}},
 					}
 				}
 
 				// Se o assassino não for o mundo, atualiza as kills
-				if killerID != 1022 && killerID != victimID {
+				if killerID != util.World && killerID != victimID {
 					if killer, ok := playersMap[killerID]; ok {
-						killer.Kills = append(killer.Kills, KillEvent{
+						killer.Kills = append(killer.Kills, input.KillEvent{
 							VictimID:   victimID,
 							VictimName: victimName,
 							Weapon:     weapon,
 						})
 					} else {
-						playersMap[killerID] = &Player{
+						playersMap[killerID] = &input.Player{
 							ID:    killerID,
 							Name:  killerName,
 							Items: []string{},
-							Kills: []KillEvent{{VictimID: victimID, VictimName: victimName, Weapon: weapon}},
+							Kills: []input.KillEvent{{VictimID: victimID, VictimName: victimName, Weapon: weapon}},
 						}
 					}
 				}
@@ -165,7 +153,7 @@ func process() {
 		} else if strings.Contains(line, "ShutdownGame:") && currentGame != nil {
 			// Finaliza o jogo atual
 			// Converte playersMap para slice de players
-			players := []*Player{}
+			players := []*input.Player{}
 			for _, player := range playersMap {
 				players = append(players, player)
 			}
@@ -179,7 +167,7 @@ func process() {
 	// Adiciona o último jogo se não foi adicionado
 	if currentGame != nil {
 		// Converte playersMap para slice de players
-		players := []*Player{}
+		players := []*input.Player{}
 		for _, player := range playersMap {
 			players = append(players, player)
 		}
