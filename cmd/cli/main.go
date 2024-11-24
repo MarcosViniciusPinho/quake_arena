@@ -20,8 +20,15 @@ func main() {
 	process()
 	if err := processor.New(
 		"../../output.json",
-		"../../game_statistics.json",
+		"../../grouping_data_by_game.json",
 	).Execute(service.NewGameService()); err != nil {
+		log.Println(err)
+		return
+	}
+	if err := processor.New(
+		"../../output.json",
+		"../../deaths_by_means_game.json",
+	).Execute(service.NewDeathService()); err != nil {
 		log.Println(err)
 		return
 	}
