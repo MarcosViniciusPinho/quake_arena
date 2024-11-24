@@ -13,6 +13,7 @@ import (
 	"github.com/MarcosViniciusPinho/quake_arena/pkg/util"
 )
 
+// TODO If there is time, refactor this part to improve efficiency
 func ExtractInformationFromTheQuakeLogFile(logFile, jsonFile string) error {
 	// Open the log file
 	file, err := os.Open(logFile)
