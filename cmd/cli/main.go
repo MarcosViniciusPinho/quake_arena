@@ -19,14 +19,14 @@ import (
 func main() {
 	process()
 	if err := processor.New(
-		"../../output.json",
+		"../../reading_the_log_file.json",
 		"../../grouping_data_by_game.json",
 	).Execute(service.NewGameService()); err != nil {
 		log.Println(err)
 		return
 	}
 	if err := processor.New(
-		"../../output.json",
+		"../../reading_the_log_file.json",
 		"../../deaths_by_means_game.json",
 	).Execute(service.NewDeathService()); err != nil {
 		log.Println(err)
@@ -195,7 +195,7 @@ func process() {
 	}
 
 	// Salva em um arquivo JSON
-	err = os.WriteFile("../../output.json", jsonData, 0644)
+	err = os.WriteFile("../../reading_the_log_file.json", jsonData, 0644)
 	if err != nil {
 		fmt.Println("Erro ao escrever o arquivo JSON:", err)
 		return

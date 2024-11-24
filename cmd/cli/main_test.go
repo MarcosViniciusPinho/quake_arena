@@ -20,9 +20,9 @@ func TestMain(m *testing.M) {
 
 func TestItMustHaveTheSameNumberOfCharactersAsTheGeneratedFileAndTheExpectedFile(t *testing.T) {
 
-	outputExpected, _ := os.ReadFile("../../outputExpected.json")
+	outputExpected, _ := os.ReadFile("../../reading_the_log_file_expected.json")
 
-	output, _ := os.ReadFile("../../output.json")
+	output, _ := os.ReadFile("../../reading_the_log_file.json")
 
 	totalContentExpected := len(string(outputExpected))
 	totalContent := len(string(output))
@@ -34,7 +34,7 @@ func TestItMustHaveTheSameNumberOfGamesReportedInTheLogFile(t *testing.T) {
 
 	totalExpectedGames := 21
 
-	output, _ := os.ReadFile("../../output.json")
+	output, _ := os.ReadFile("../../reading_the_log_file.json")
 
 	var games []any
 	_ = json.Unmarshal(output, &games)
