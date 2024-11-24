@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 	"testing"
 
@@ -35,10 +34,7 @@ func TestItMustHaveTheSameNumberOfGamesReportedInTheLogFile(t *testing.T) {
 
 	totalExpectedGames := 21
 
-	output, err := os.ReadFile("../../output.json")
-	if err != nil {
-		log.Fatalf("erro ao ler o arquivo: %v", err)
-	}
+	output, _ := os.ReadFile("../../output.json")
 
 	var games []any
 	_ = json.Unmarshal(output, &games)

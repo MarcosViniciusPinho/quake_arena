@@ -3,21 +3,20 @@ package processor
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/MarcosViniciusPinho/quake_arena/internal/domain"
 	"github.com/MarcosViniciusPinho/quake_arena/internal/domain/service"
 )
 
-type GameProcessor struct {
+type Processor struct {
 	fileNameProcess string
 	fileNameNew     string
 }
 
-func (gp GameProcessor) Execute(service service.IService) error {
+func (p Processor) Execute(service service.IService) error {
 
-	output, err := os.ReadFile(gp.fileNameProcess)
+	output, err := os.ReadFile(p.fileNameProcess)
 	if err != nil {
 		return fmt.Errorf("error when trying to read the file: %v", err)
 	}
@@ -32,21 +31,21 @@ func (gp GameProcessor) Execute(service service.IService) error {
 
 	json, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		log.Fatalf("Erro ao serializar os resultados para JSON: %v", err)
+		return fmt.Errorf("error when serializing the results to JSON: %v", err)
 	}
 
-	outputFile := gp.fileNameNew
+	outputFile := p.fileNameNew
 
 	err = os.WriteFile(outputFile, json, 0644)
 	if err != nil {
-		log.Fatalf("Erro ao escrever o arquivo de saída '%s': %v", outputFile, err)
+		return fmt.Errorf("error when writing the output file '%s': %v", outputFile, err)
 	}
 
 	return nil
 }
 
-func New(fileNameProcess, fileNameNew string) GameProcessor {
-	return GameProcessor{
+func New(fileNameProcess, fileNameNew string) Processor {
+	return Processor{
 		fileNameProcess: fileNameProcess,
 		fileNameNew:     fileNameNew,
 	}
