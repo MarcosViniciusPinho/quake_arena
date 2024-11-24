@@ -59,3 +59,10 @@ Para garantir um fluxo de trabalho ágil e eficiente, o projeto utiliza um **Pip
   Em caso de falhas nos testes ou na etapa de build, o pipeline notifica a equipe, permitindo uma resposta rápida para corrigir os problemas.
 
 Esse processo automatizado promove **agilidade** e **confiança** no desenvolvimento, garantindo que o código entregue seja de alta qualidade.
+
+### 🚀 Para execução da app, basta digitar o seguinte comando:
+
+```bash
+cd cmd/cli
+go run main.go
+```
