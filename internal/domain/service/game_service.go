@@ -1,4 +1,4 @@
-package game
+package service
 
 import (
 	"fmt"
@@ -8,7 +8,13 @@ import (
 	"github.com/MarcosViniciusPinho/quake_arena/pkg/util"
 )
 
-func Process(games []domain.Game) map[string]output.GameOutput {
+type GameService struct{}
+
+func NewGameService() GameService {
+	return GameService{}
+}
+
+func (gs GameService) Process(games []domain.Game) any {
 	results := make(map[string]output.GameOutput)
 
 	for idx, game := range games {

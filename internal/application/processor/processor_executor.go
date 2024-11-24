@@ -7,16 +7,17 @@ import (
 	"os"
 
 	"github.com/MarcosViniciusPinho/quake_arena/internal/domain"
-	"github.com/MarcosViniciusPinho/quake_arena/internal/domain/game"
+	"github.com/MarcosViniciusPinho/quake_arena/internal/domain/service"
 )
 
 type GameProcessor struct {
-	fileName string
+	fileNameProcess string
+	fileNameNew     string
 }
 
-func (gp GameProcessor) Execute() error {
+func (gp GameProcessor) Execute(service service.IService) error {
 
-	output, err := os.ReadFile(gp.fileName)
+	output, err := os.ReadFile(gp.fileNameProcess)
 	if err != nil {
 		return fmt.Errorf("error when trying to read the file: %v", err)
 	}
@@ -27,16 +28,16 @@ func (gp GameProcessor) Execute() error {
 		return fmt.Errorf("error when trying to deserialize the game struct: %v", err)
 	}
 
-	gameOutput := game.Process(games)
+	result := service.Process(games)
 
-	finalJSON, err := json.MarshalIndent(gameOutput, "", "  ")
+	json, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		log.Fatalf("Erro ao serializar os resultados para JSON: %v", err)
 	}
 
-	outputFile := "../../game_statistics.json"
+	outputFile := gp.fileNameNew
 
-	err = os.WriteFile(outputFile, finalJSON, 0644)
+	err = os.WriteFile(outputFile, json, 0644)
 	if err != nil {
 		log.Fatalf("Erro ao escrever o arquivo de saída '%s': %v", outputFile, err)
 	}
@@ -44,8 +45,9 @@ func (gp GameProcessor) Execute() error {
 	return nil
 }
 
-func NewGameProcessor(fileName string) GameProcessor {
+func New(fileNameProcess, fileNameNew string) GameProcessor {
 	return GameProcessor{
-		fileName: fileName,
+		fileNameProcess: fileNameProcess,
+		fileNameNew:     fileNameNew,
 	}
 }

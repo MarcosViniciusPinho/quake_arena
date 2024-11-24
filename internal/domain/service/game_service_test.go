@@ -1,4 +1,4 @@
-package game
+package service
 
 import (
 	"encoding/json"
@@ -13,11 +13,12 @@ func TestItMustGroupInformationFromEachGameWithEachPlayersStatisticsAndWithTheTo
 
 	tests := getTests()
 
+	service := NewGameService()
 	for _, test := range tests {
 		var games []domain.Game
 		_ = json.Unmarshal([]byte(test.Input), &games)
 
-		gameOutput := Process(games)
+		gameOutput := service.Process(games)
 
 		require.Equal(t, test.Expected, gameOutput)
 	}

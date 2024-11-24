@@ -12,13 +12,18 @@ import (
 
 	"github.com/MarcosViniciusPinho/quake_arena/internal/application/input"
 	"github.com/MarcosViniciusPinho/quake_arena/internal/application/processor"
+	"github.com/MarcosViniciusPinho/quake_arena/internal/domain/service"
 	"github.com/MarcosViniciusPinho/quake_arena/pkg/util"
 )
 
 func main() {
 	process()
-	if err := processor.NewGameProcessor("../../output.json").Execute(); err != nil {
+	if err := processor.New(
+		"../../output.json",
+		"../../game_statistics.json",
+	).Execute(service.NewGameService()); err != nil {
 		log.Println(err)
+		return
 	}
 }
 
